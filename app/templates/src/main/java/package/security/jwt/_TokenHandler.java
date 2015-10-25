@@ -1,47 +1,42 @@
 package <%=packageName%>.security.jwt;
 
-import com.google.common.base.Preconditions;
-import com.technicalrex.springsecurityjwt.support.validation.StringConditions;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.stereotype.Component;
 
-public final class TokenHandler {
+/**
+ * Created by jhipster on 10/25/15.
+ */
+@Component
+public class TokenHandler {
 
     private final String secret;
-    private final UserService userService;
-    private final int tokenValidity;
+    private final UserDetailsService userDetailsService;
 
-    public TokenHandler(String secret, UserService userService) {
-        this.secret = StringConditions.checkNotBlank(secret);
-        this.userService = Preconditions.checkNotNull(userService);
+    @Autowired
+    public TokenHandler(@Value("${token.secret}") String secret, UserDetailsService userDetailsService) {
+        this.secret = secret;
+        this.userDetailsService = userDetailsService;
     }
 
     public UserDetails parseUserFromToken(String token) {
-        String decryptedtoken = Jwts.parser()
+        String username = Jwts.parser()
                 .setSigningKey(secret)
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
-        String tokens = decryptedtoken.split(":);
-        String username = tokens[0];
-        return userService.loadUserByUsername(username);
+        return userDetailsService.loadUserByUsername(username);
     }
 
-    public String computeSignature(UserDetails userDetails, long expires) {
-        StringBuilder signatureBuilder = new StringBuilder();
-        signatureBuilder.append(userDetails.getUsername()).append(":");
-        signatureBuilder.append(expires).append(":");
-        signatureBuilder.append(userDetails.getPassword()).append(":");
-        signatureBuilder.append(secretKey);
-        return signatureBuilder.toString();
-     }
-
     public String createTokenForUser(UserDetails user) {
-        long expires = long expires = System.currentTimeMillis() + 1000L * tokenValidity;
         return Jwts.builder()
-                .setSubject(user.getUsername() + ":" + computeSignature(user,expires))
+                .setSubject(user.getUsername())
                 .signWith(SignatureAlgorithm.HS512, secret)
                 .compact();
     }
+
 }

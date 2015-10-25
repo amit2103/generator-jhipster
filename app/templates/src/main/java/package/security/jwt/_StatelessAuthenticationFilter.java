@@ -1,4 +1,4 @@
-package com.technicalrex.springsecurityjwt.auth.jwt;
+package <%=packageName%>.security.jwt;
 
 import java.io.IOException;
 
